@@ -7,14 +7,12 @@ from scipy.stats import pearsonr
 import streamlit as st
 import matplotlib.pyplot as plt
 
-
 st.set_page_config(
     page_title="Линейная Многофакторная Модель (ЛМФМ)",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
 
 st.markdown(
     """
@@ -44,7 +42,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
 
 def load_data(file_path):
     """Загрузка данных из текстового файла"""
@@ -98,9 +95,7 @@ def plot_results(y_train, y_train_pred, y_test, y_test_pred):
     ax.legend()
     return fig
 
--
 st.title("Линейная Многофакторная Модель (ЛМФМ)")
-
 
 st.sidebar.header("Шаг 1: Загрузка данных")
 uploaded_file = st.sidebar.file_uploader("Загрузите файл данных", type=["xlsx"])
@@ -110,7 +105,6 @@ if uploaded_file:
     st.write("### Просмотр данных")
     st.dataframe(data)
 
-   
     st.sidebar.header("Шаг 2: Параметры")
     target_column = st.sidebar.selectbox("Выберите колонку отклика (y)", data.columns)
     feature_columns = st.sidebar.multiselect(
@@ -157,11 +151,18 @@ if uploaded_file:
         st.write("### Финальный набор факторов")
         st.write(feature_columns)
 
-        # Построение модели
-        X_train_final = X_train.loc[max_lag:, feature_columns]
+        # Выделение подрядов из ряда отклика
+        st.sidebar.header("Шаг 3: Выделение подрядов")
+        start_index = st.sidebar.slider("Начальный индекс подряда", 0, len(y_train) - 1, 0)
+        end_index = st.sidebar.slider("Конечный индекс подряда", start_index + 1, len(y_train), len(y_train))
+
+        # Финальный набор данных для обучения
+        X_train_final = X_train.loc[start_index + max_lag:end_index, feature_columns]
+        y_train_final = y_train.loc[start_index + max_lag:end_index]
         X_test_final = X_test.loc[X.shape[0] - test_size + max_lag :, feature_columns]
-        y_train_final = y_train.loc[max_lag:]
         y_test_final = y_test.loc[X.shape[0] - test_size + max_lag :]
+
+        # Построение модели
         model = build_model(X_train_final, y_train_final)
         st.write("### Итоговая модель")
         st.code(model.summary())
